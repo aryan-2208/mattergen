@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Materials Design Portal</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #1a1d24;
+    --border: #2a2e38;
+    --accent: #6c8cff;
+    --text: #e6e8ec;
+    --muted: #9aa0ad;
+    --good: #4ade80;
+    --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px;
+  }
+  .container {
+    width: 100%;
+    max-width: 760px;
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 28px;
+  }
+  .input-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  textarea {
+    width: 100%;
+    min-height: 110px;
+    resize: vertical;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    line-height: 1.5;
+  }
+  textarea::placeholder { color: var(--muted); }
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+  button#runBtn {
+    background: var(--accent);
+    color: #0f1115;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button#runBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  button#runBtn:hover:not(:disabled) { opacity: 0.9; }
+
+  .status-card, .result-card, .error-card {
+    margin-top: 24px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .stage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .stage {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .stage.active { color: var(--text); }
+  .stage.done { color: var(--good); }
+  .stage-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+  }
+  .stage.active .stage-icon {
+    border-color: var(--accent);
+    border-top-color: transparent;
+    animation: spin 0.8s linear infinite;
+  }
+  .stage.done .stage-icon {
+    border-color: var(--good);
+    background: var(--good);
+    color: #0f1115;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .current-message {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  h2 { font-size: 16px; margin: 0 0 14px 0; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .summary-grid .label { color: var(--muted); }
+  .summary-grid .value { font-weight: 500; }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .tag {
+    background: #232733;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .download-btn {
+    display: inline-block;
+    background: var(--accent);
+    color: #0f1115;
+    text-decoration: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .error-card { border-color: var(--bad); }
+  .error-card h2 { color: var(--bad); }
+  .error-card p { font-size: 14px; color: var(--text); white-space: pre-wrap; }
+
+  details { margin-top: 16px; font-size: 13px; }
+  summary { cursor: pointer; color: var(--muted); }
+  pre {
+    background: #0c0e12;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Materials Design Portal</h1>
+  <div class="subtitle">Describe the material you want — the pipeline will generate a hypothesis, run MatterGen, and return a CIF structure file.</div>
+
+  <div class="input-card">
+    <textarea id="promptInput" placeholder="e.g. I want a lightweight material with high electrical conductivity, similar to graphene but with better thermal stability above 500°C, suitable for semiconductor applications."></textarea>
+    <div class="actions">
+      <button id="runBtn">Run Pipeline</button>
+    </div>
+  </div>
+
+  <div id="statusCard" class="status-card" style="display:none;">
+    <h2>Pipeline Progress</h2>
+    <div class="stage-list">
+      <div class="stage" data-stage="1"><div class="stage-icon"></div><div>Generating hypothesis (Groq · LLaMA 3.3 70B)</div></div>
+      <div class="stage" data-stage="2"><div class="stage-icon"></div><div>Running MatterGen diffusion model</div></div>
+      <div class="stage" data-stage="3"><div class="stage-icon"></div><div>Validating &amp; parsing CIF structure</div></div>
+      <div class="stage" data-stage="4"><div class="stage-icon"></div><div>Done</div></div>
+    </div>
+    <div class="current-message" id="currentMessage"></div>
+  </div>
+
+  <div id="resultCard" class="result-card" style="display:none;">
+    <h2>Result</h2>
+    <div class="summary-grid">
+      <div class="label">Chemical formula</div><div class="value" id="resFormula">-</div>
+      <div class="label">Target chemical system</div><div class="value" id="resChemSys">-</div>
+      <div class="label">Crystal structure</div><div class="value" id="resCrystal">-</div>
+      <div class="label">Number of atoms</div><div class="value" id="resAtoms">-</div>
+      <div class="label">Cell volume (Å³)</div><div class="value" id="resVolume">-</div>
+    </div>
+    <div class="tags" id="resProps"></div>
+    <a id="downloadBtn" class="download-btn" href="#" download>Download CIF File</a>
+
+    <details>
+      <summary>View hypothesis JSON</summary>
+      <pre id="resHypothesis"></pre>
+    </details>
+  </div>
+
+  <div id="errorCard" class="error-card" style="display:none;">
+    <h2>Pipeline Failed</h2>
+    <p id="errorMessage"></p>
+  </div>
+</div>
+
+<script>
+const runBtn = document.getElementById('runBtn');
+const promptInput = document.getElementById('promptInput');
+const statusCard = document.getElementById('statusCard');
+const resultCard = document.getElementById('resultCard');
+const errorCard = document.getElementById('errorCard');
+const currentMessage = document.getElementById('currentMessage');
+
+let pollTimer = null;
+
+function resetUI() {
+  resultCard.style.display = 'none';
+  errorCard.style.display = 'none';
+  statusCard.style.display = 'block';
+  document.querySelectorAll('.stage').forEach(s => {
+    s.classList.remove('active', 'done');
+    s.querySelector('.stage-icon').textContent = '';
+  });
+  currentMessage.textContent = '';
+}
+
+function setStage(stage) {
+  document.querySelectorAll('.stage').forEach(s => {
+    const n = parseInt(s.dataset.stage, 10);
+    s.classList.remove('active', 'done');
+    s.querySelector('.stage-icon').textContent = '';
+    if (n < stage) {
+      s.classList.add('done');
+      s.querySelector('.stage-icon').textContent = '✓';
+    } else if (n === stage) {
+      s.classList.add('active');
+    }
+  });
+}
+
+async function runPipeline() {
+  const prompt = promptInput.value.trim();
+  if (!prompt) return;
+
+  runBtn.disabled = true;
+  resetUI();
+  setStage(1);
+
+  const res = await fetch('/api/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    showError(err.error || 'Failed to start pipeline.');
+    runBtn.disabled = false;
+    return;
+  }
+
+  const { job_id } = await res.json();
+  pollTimer = setInterval(() => poll(job_id), 1500);
+}
+
+async function poll(jobId) {
+  const res = await fetch(`/api/status/${jobId}`);
+  if (!res.ok) {
+    clearInterval(pollTimer);
+    showError('Lost connection to pipeline job.');
+    runBtn.disabled = false;
+    return;
+  }
+  const job = await res.json();
+
+  if (job.message) currentMessage.textContent = job.message;
+  if (job.stage) setStage(job.stage);
+
+  if (job.status === 'done') {
+    clearInterval(pollTimer);
+    setStage(5); // mark all done
+    showResult(job.result, jobId);
+    runBtn.disabled = false;
+  } else if (job.status === 'error') {
+    clearInterval(pollTimer);
+    showError(job.error || job.message || 'Unknown error.');
+    runBtn.disabled = false;
+  }
+}
+
+function showResult(result, jobId) {
+  statusCard.style.display = 'none';
+  resultCard.style.display = 'block';
+
+  const s = result.summary || {};
+  document.getElementById('resFormula').textContent = s.formula || 'N/A';
+  document.getElementById('resChemSys').textContent = (result.hypothesis && result.hypothesis.chemical_system) || 'N/A';
+  document.getElementById('resCrystal').textContent = s.crystal_structure || 'N/A';
+  document.getElementById('resAtoms').textContent = s.num_atoms ?? 'N/A';
+  document.getElementById('resVolume').textContent = s.volume ?? 'N/A';
+
+  const propsEl = document.getElementById('resProps');
+  propsEl.innerHTML = '';
+  (s.key_properties || []).forEach(p => {
+    const tag = document.createElement('div');
+    tag.className = 'tag';
+    tag.textContent = p;
+    propsEl.appendChild(tag);
+  });
+
+  document.getElementById('resHypothesis').textContent = JSON.stringify(result.hypothesis, null, 2);
+  document.getElementById('downloadBtn').href = `/api/download/${jobId}`;
+}
+
+function showError(msg) {
+  statusCard.style.display = 'none';
+  errorCard.style.display = 'block';
+  document.getElementById('errorMessage').textContent = msg;
+}
+
+runBtn.addEventListener('click', runPipeline);
+</script>
+</body>
+</html>
